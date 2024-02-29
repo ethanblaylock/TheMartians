@@ -5,12 +5,13 @@
  * Created on February 28, 2024, 5:10 PM
  */
 
-#include "drive.h"
 #include "xc.h"
+#include "line.h"
 
 int main(void) {
     setup();
     while(1) {
+        /*
         switch (current_state) {
             case 1:
                 driveStraight(36, FORWARD);
@@ -31,6 +32,8 @@ int main(void) {
                 stopRobot();
                 break;  
         }
+        */ // Code for Milestone 6
+        followLine();
     }
 
     return 0;

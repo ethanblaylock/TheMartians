@@ -19,6 +19,9 @@
                    projectFiles="true">
       <itemPath>drive.h</itemPath>
       <itemPath>main.c</itemPath>
+      <itemPath>line.h</itemPath>
+      <itemPath>helper.h</itemPath>
+      <itemPath>setup.h</itemPath>
     </logicalFolder>
   </logicalFolder>
   <projectmakefile>Makefile</projectmakefile>
@@ -194,6 +197,9 @@
         <property key="relaxed-math" value="false"/>
         <property key="save-temps" value="false"/>
       </C30Global>
+      <PICkit3PlatformTool>
+        <property key="firmware.download.all" value="false"/>
+      </PICkit3PlatformTool>
     </conf>
   </confs>
 </configurationDescriptor>
