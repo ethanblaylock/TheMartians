@@ -113,8 +113,4 @@ void __attribute__((interrupt, no_auto_psv)) _OC3Interrupt(void) {
 }
  */
 
-
-
-
-
 #endif	//DRIVE_H

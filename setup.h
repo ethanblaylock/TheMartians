@@ -61,6 +61,9 @@ void config_ad(void) {
 
 }
 
+/**
+ * Sets up the proper registers for the PWM
+ */
 void config_pwm(void) {
     OC1CON1 = 0;
     OC1CON2 = 0;
@@ -84,6 +87,9 @@ void config_pwm(void) {
     OC3CON1bits.OCM = 0b110;                                               
 }
 
+/**
+ * Configures the proper interrupts
+ */
 void config_interrupts(void) {
     _OC2IP = 4;
     _OC2IE = 1;
@@ -96,6 +102,9 @@ void config_interrupts(void) {
      */
 }
 
+/**
+ * Sets the given pins for input or output
+ */
 void config_pins(void) {
     _TRISB9 = 0;
     _TRISB8 = 0;

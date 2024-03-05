@@ -17,6 +17,9 @@
 
 #define DISTANCE_BETWEEN_QRD 4 // Inches
 
+/**
+ * Based off QRD sensors makes adjustments to follow white line
+ */
 void followLine(void) {
     if (LEFT_QRD >= QRD_THRESHOLD && RIGHT_QRD >= QRD_THRESHOLD) { /* Both see black */
         driveStraight(STRAIGHT_DISTANCE, FORWARD);
@@ -29,9 +32,13 @@ void followLine(void) {
     }
     else if (LEFT_QRD <= QRD_THRESHOLD && RIGHT_QRD <= QRD_THRESHOLD) {
         // Turn into lander or out of canyon
+        stopRobot();
     }
 }
 
+/**
+ * Similar to followLine but this one blocks code to ensure turns are fully executed
+ */
 void followLine2(void) {
     if (LEFT_QRD >= QRD_THRESHOLD && RIGHT_QRD >= QRD_THRESHOLD) { /* Both see black */
         driveStraight(STRAIGHT_DISTANCE, FORWARD);
@@ -52,6 +59,7 @@ void followLine2(void) {
     }
     else if (LEFT_QRD <= QRD_THRESHOLD && RIGHT_QRD <= QRD_THRESHOLD) {
         // Turn into lander or out of canyon
+        stopRobot();
     }
 }
 
