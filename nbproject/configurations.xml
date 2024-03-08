@@ -22,6 +22,7 @@
       <itemPath>line.h</itemPath>
       <itemPath>helper.h</itemPath>
       <itemPath>setup.h</itemPath>
+      <itemPath>canyon.h</itemPath>
     </logicalFolder>
   </logicalFolder>
   <projectmakefile>Makefile</projectmakefile>
@@ -200,6 +201,9 @@
       <PICkit3PlatformTool>
         <property key="firmware.download.all" value="false"/>
       </PICkit3PlatformTool>
+      <Tool>
+        <property key="firmware.download.all" value="false"/>
+      </Tool>
     </conf>
   </confs>
 </configurationDescriptor>

@@ -7,33 +7,20 @@
 
 #include "xc.h"
 #include "line.h"
+#include "canyon.h"
 
 int main(void) {
+    // States : FOLLOW_LINE, NAVIGATE_CANYON
     setup();
+    enum line_state current_state = FOLLOW_LINE; // Sets current_state
     while(1) {
-        /*
-        switch (current_state) {
-            case 1:
-                driveStraight(36, FORWARD);
-                break;
-            case 2:
-                turnRobot(90, CLOCKWISE);
-                break;
-            case 3:
-                driveStraight(36, FORWARD);
-                break;
-            case 4:
-                turnRobot(180, COUNTERCLOCKWISE);
-                break;
-            case 5:
-                driveStraight(36, FORWARD);
-                break;
-            case 6:
-                stopRobot();
-                break;  
+        // Figures out what to do based on current state
+        if (current_state == FOLLOW_LINE) {
+            followLine();
         }
-        */ // Code for Milestone 6
-        followLine();
+        else if (current_state == NAVIGATE_CANYON) {
+            navigateCanyon();
+        }
     }
 
     return 0;

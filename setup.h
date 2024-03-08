@@ -11,9 +11,11 @@
 #define ANALOG_INPUTS 4
 #define ANALOG_PINS 0b0010000000010011
 
+enum line_state {FOLLOW_LINE, NAVIGATE_CANYON};
+
 // This function configures the A/D to read from a
 // single channel in auto conversion mode.
-void config_ad(void) {
+void configAD(void) {
     _ADON = 0;    // AD1CON1<15> -- Turn off A/D during config
 
     // AD1CON1 register
@@ -64,7 +66,7 @@ void config_ad(void) {
 /**
  * Sets up the proper registers for the PWM
  */
-void config_pwm(void) {
+void configPWM(void) {
     OC1CON1 = 0;
     OC1CON2 = 0;
     OC1CON1bits.OCTSEL = 0b111; // System (peripheral) clock as timing source
@@ -90,7 +92,7 @@ void config_pwm(void) {
 /**
  * Configures the proper interrupts
  */
-void config_interrupts(void) {
+void configInterrupts(void) {
     _OC2IP = 4;
     _OC2IE = 1;
     _OC2IF = 0;
@@ -105,7 +107,7 @@ void config_interrupts(void) {
 /**
  * Sets the given pins for input or output
  */
-void config_pins(void) {
+void configPins(void) {
     _TRISB9 = 0;
     _TRISB8 = 0;
 }
@@ -114,14 +116,15 @@ void config_pins(void) {
  * Sets up the robot with the proper registers
  */
 void setup() {
-    config_ad();
-    config_pwm();
-    config_interrupts();
-    config_pins();
+    configAD();
+    configPWM();
+    configInterrupts();
+    configPins();
     
     CLKDIVbits.RCDIV = 0;
             
     //current_state = 1;
+    
 }
 
 

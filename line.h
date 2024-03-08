@@ -10,58 +10,53 @@
 #define LEFT_QRD ADC1BUF0
 #define RIGHT_QRD ADC1BUF1
 
-#define STRAIGHT_DISTANCE 5 // Inches
+#define STRAIGHT_DISTANCE 1 // Inches
 
-#define ADJUSTMENT_DEGREES 15.0 // Degrees
+#define ADJUSTMENT_DEGREES 2.5 // Degrees
 #define ADJUSTMENT_DISTANCE 1 // Inches
 
-#define DISTANCE_BETWEEN_QRD 4 // Inches
+
+#define DISTANCE_BETWEEN_QRD 2.25 // Inches
+
+static double speed_modifier = 1; // A multiplier for speed
+static int line_state = 1; // A variable for keeping track of what state of line following the robot is on
 
 /**
- * Based off QRD sensors makes adjustments to follow white line
+ * Uses QRD Sensor and variably increase the speed of the wheels to compensate
+ * for larger readjustments
  */
 void followLine(void) {
-    if (LEFT_QRD >= QRD_THRESHOLD && RIGHT_QRD >= QRD_THRESHOLD) { /* Both see black */
-        driveStraight(STRAIGHT_DISTANCE, FORWARD);
+     if (LEFT_QRD >= QRD_THRESHOLD && RIGHT_QRD >= QRD_THRESHOLD) {/* Both see black */
+        driveStraight(STRAIGHT_DISTANCE, REVERSE);
+        line_state = 0;
     }
     else if (LEFT_QRD >= QRD_THRESHOLD && RIGHT_QRD <= QRD_THRESHOLD) { /* Robot is drifting to the left */
-        turnRobot(ADJUSTMENT_DEGREES, CLOCKWISE);
+        if (line_state == 1) {
+            speed_modifier = speed_modifier + 0.01; // Increase turning speed if robot is still on line
+        } else {
+            speed_modifier = 1.0;
+        }
+        driveDifferentialy(ADJUSTMENT_DISTANCE, RIGHT, speed_modifier);
+        line_state = 1;
     } 
     else if (LEFT_QRD <= QRD_THRESHOLD && RIGHT_QRD >= QRD_THRESHOLD) { /* Robot is drifting to the right */
-        turnRobot(ADJUSTMENT_DEGREES, COUNTERCLOCKWISE);
+        if (line_state == 2) {
+            speed_modifier = speed_modifier + 0.01; // Increase turning speed if robot is still on line
+        } else {
+            speed_modifier = 1.0;
+        }
+        driveDifferentialy(ADJUSTMENT_DISTANCE, LEFT, speed_modifier);
+        line_state = 2;
     }
     else if (LEFT_QRD <= QRD_THRESHOLD && RIGHT_QRD <= QRD_THRESHOLD) {
         // Turn into lander or out of canyon
         stopRobot();
+        line_state = 3;
     }
+     
+     
+     // State transition logic
+     
 }
-
-/**
- * Similar to followLine but this one blocks code to ensure turns are fully executed
- */
-void followLine2(void) {
-    if (LEFT_QRD >= QRD_THRESHOLD && RIGHT_QRD >= QRD_THRESHOLD) { /* Both see black */
-        driveStraight(STRAIGHT_DISTANCE, FORWARD);
-    }
-    else if (LEFT_QRD >= QRD_THRESHOLD && RIGHT_QRD <= QRD_THRESHOLD) { /* Robot is drifting to the left */
-        turnRobot(ADJUSTMENT_DEGREES, CLOCKWISE);
-        while(!readjustment_complete) {}
-        driveStraight(ADJUSTMENT_DISTANCE, FORWARD);
-        while(!readjustment_complete) {}
-        turnRobot(round(ADJUSTMENT_DEGREES/2), COUNTERCLOCKWISE);
-    } 
-    else if (LEFT_QRD <= QRD_THRESHOLD && RIGHT_QRD >= QRD_THRESHOLD) { /* Robot is drifting to the right */
-        turnRobot(ADJUSTMENT_DEGREES, COUNTERCLOCKWISE);
-        while(!readjustment_complete) {}
-        driveStraight(ADJUSTMENT_DISTANCE, FORWARD);
-        while(!readjustment_complete) {}
-        turnRobot(round(ADJUSTMENT_DEGREES/2), CLOCKWISE);
-    }
-    else if (LEFT_QRD <= QRD_THRESHOLD && RIGHT_QRD <= QRD_THRESHOLD) {
-        // Turn into lander or out of canyon
-        stopRobot();
-    }
-}
-
 #endif	/* LINE_H */
 

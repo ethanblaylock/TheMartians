@@ -95,8 +95,8 @@ void configurePWM(int pinNum, double period, double dutyCycle) {
             OC2R = dutyValue; // Duty cycle 
             break;
         case 5:
-            if (OC2CON1bits.OCM == 0) {
-                OC2CON1bits.OCM = 0b110;
+            if (OC3CON1bits.OCM == 0) {
+                OC3CON1bits.OCM = 0b110;
             }
             OC3RS = value; // Period
             OC3R = dutyValue; // Duty cycle 

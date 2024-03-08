@@ -3,7 +3,6 @@
 
 #include "xc.h" // include processor files - each processor file is guarded.  
 #include "helper.h"
-#include "stdbool.h"
 
 #define MOTOR_PWM_1 4
 #define MOTOR_DIR_1 12
@@ -11,7 +10,7 @@
 #define MOTOT_PWM_2 5
 #define MOTOR_DIR_2 13
 
-#define PWM_FREQUENCY 400
+#define PWM_FREQUENCY 250
 
 #define STEPS_PER_INCH 18.182
 #define STEPS_PER_ROTATION 484
@@ -20,24 +19,18 @@
 
 #define TOTAL_STATES 6
 
-static int total_steps = 0;
+static int total_steps2 = 0;
+static int total_steps3 = 0;
 static int steps_needed = 0;
+static int steps_needed2 = 0;
+static int steps_needed3 = 0;
 static int current_state = 0;
-static bool readjustment_complete = false; // Tracks wheter the motor has completed its steps
 
 enum pinState {HIGH = 1, LOW = 0};
 enum circle {CLOCKWISE = 1, COUNTERCLOCKWISE = 0};
 enum direciotn {FORWARD = 0, REVERSE = 1};
-enum state {ONE = 1, TWO = 2, THREE = 3, FOUR = 4, FIVE = 5};
+enum leftRight {LEFT = 0, RIGHT = 1};
 
-/**
- * Method to move to the next state 
- */
-void incrementState() {
-    if (current_state != TOTAL_STATES) {
-        current_state++;
-    }
-}
 
 /**
  * Configures the given PWM and sets the proper output pin to drive the motor
@@ -49,7 +42,6 @@ void incrementState() {
 void driveMotor(int motorPWMPin, int frequency, int motorDirPin, int direction) {
     configurePWM(motorPWMPin, frequency, 0.5);
     setOutputPin(motorDirPin, direction);
-    readjustment_complete = false;
 }
 
 /**
@@ -59,7 +51,8 @@ void driveMotor(int motorPWMPin, int frequency, int motorDirPin, int direction) 
  */
 void turnRobot(double degrees, int direction) {
     steps_needed = round((degrees/360.0)*STEPS_PER_ROTATION/STEP_MODE);
-    
+    steps_needed2 = steps_needed;
+    steps_needed3 = steps_needed;
     driveMotor(MOTOR_PWM_1, PWM_FREQUENCY, MOTOR_DIR_1, direction);
     driveMotor(MOTOT_PWM_2, PWM_FREQUENCY, MOTOR_DIR_2, direction ^ 1);
 }
@@ -71,11 +64,36 @@ void turnRobot(double degrees, int direction) {
  */
 void driveStraight (double distance, int direction) {
     steps_needed = round(distance*STEPS_PER_INCH/STEP_MODE);
-    
+    steps_needed2 = steps_needed;
+    steps_needed3 = steps_needed;
     driveMotor(MOTOR_PWM_1, PWM_FREQUENCY, MOTOR_DIR_1, direction);
     driveMotor(MOTOT_PWM_2, PWM_FREQUENCY, MOTOR_DIR_2, direction);
 }
 
+/**
+ * Drive the two motors at different speeds to correct when off the line
+ * @param distance The readjustment distance
+ * @param direction Forward or reverse
+ * @param speed_modifier the speed modifier at which one motor is sped up and the other slowed down
+ */
+void driveDifferentialy (double distance, int direction, double speed_modifier) {
+    steps_needed = round(distance*STEPS_PER_INCH/STEP_MODE);
+    
+    if (direction == LEFT) {
+        steps_needed2 = steps_needed/speed_modifier;
+        steps_needed3 = steps_needed*speed_modifier;
+        driveMotor(MOTOT_PWM_2, PWM_FREQUENCY*speed_modifier, MOTOR_DIR_2, REVERSE);
+        driveMotor(MOTOR_PWM_1, PWM_FREQUENCY/speed_modifier, MOTOR_DIR_1, REVERSE);
+    }
+    else if (direction == RIGHT) {
+        steps_needed2 = steps_needed*speed_modifier;
+        steps_needed3 = steps_needed/speed_modifier;
+        driveMotor(MOTOR_PWM_1, PWM_FREQUENCY*speed_modifier, MOTOR_DIR_1, REVERSE);
+        driveMotor(MOTOT_PWM_2, PWM_FREQUENCY/speed_modifier, MOTOR_DIR_2, REVERSE);
+    }
+    
+    
+}
 /**
  * Stops the robot by turning off the output compare modules
  */
@@ -87,30 +105,31 @@ void stopRobot() {
 /**
  * This is the interrupt for OC2 which is pin 4
  * It counts steps and checks if we have hit the number of steps needed,
- * if so it moves to the next state
+ * if so it stops the robot
  */
 void __attribute__((interrupt, no_auto_psv)) _OC2Interrupt(void) {
     _OC2IF = 0; // Clear flag
-    total_steps++;
-    if (total_steps > steps_needed) {
-        incrementState();
+    total_steps2++;
+    if (total_steps2 > steps_needed2) {
         stopRobot();
-        total_steps = 0;
-        readjustment_complete = true;
+        total_steps2 = 0;
     }
     
 }
 
-/*
+/**
+ * This is the interrupt for OC3 which is pin 5
+ * It counts steps and checks if we have hit the number of steps needed,
+ * if so it stops the robot
+ */
 void __attribute__((interrupt, no_auto_psv)) _OC3Interrupt(void) {
     _OC3IF = 0; // Clear flag
     total_steps3++;
-    if (total_steps3 > steps_needed) {
-        
+    if (total_steps3 > steps_needed3) {
         stopRobot();
         total_steps3 = 0;
     }
 }
- */
+
 
 #endif	//DRIVE_H
