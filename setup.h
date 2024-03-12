@@ -97,11 +97,10 @@ void configInterrupts(void) {
     _OC2IE = 1;
     _OC2IF = 0;
     
-    /*
+    
     _OC3IP = 4;
     _OC3IE = 1;
     _OC3IF = 0;
-     */
 }
 
 /**

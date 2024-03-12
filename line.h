@@ -15,8 +15,9 @@
 #define ADJUSTMENT_DEGREES 2.5 // Degrees
 #define ADJUSTMENT_DISTANCE 1 // Inches
 
-
 #define DISTANCE_BETWEEN_QRD 2.25 // Inches
+
+#define SPEED_MODIFIER_INCREMENT 0.01
 
 static double speed_modifier = 1; // A multiplier for speed
 static int line_state = 1; // A variable for keeping track of what state of line following the robot is on
@@ -32,18 +33,18 @@ void followLine(void) {
     }
     else if (LEFT_QRD >= QRD_THRESHOLD && RIGHT_QRD <= QRD_THRESHOLD) { /* Robot is drifting to the left */
         if (line_state == 1) {
-            speed_modifier = speed_modifier + 0.01; // Increase turning speed if robot is still on line
+            speed_modifier = speed_modifier + SPEED_MODIFIER_INCREMENT; // Increase turning speed if robot is still on line
         } else {
-            speed_modifier = 1.0;
+            speed_modifier = 1.0; // Resets the speed modifier
         }
         driveDifferentialy(ADJUSTMENT_DISTANCE, RIGHT, speed_modifier);
         line_state = 1;
     } 
     else if (LEFT_QRD <= QRD_THRESHOLD && RIGHT_QRD >= QRD_THRESHOLD) { /* Robot is drifting to the right */
         if (line_state == 2) {
-            speed_modifier = speed_modifier + 0.01; // Increase turning speed if robot is still on line
+            speed_modifier = speed_modifier + SPEED_MODIFIER_INCREMENT; // Increase turning speed if robot is still on line
         } else {
-            speed_modifier = 1.0;
+            speed_modifier = 1.0; // Resets the speed modifier
         }
         driveDifferentialy(ADJUSTMENT_DISTANCE, LEFT, speed_modifier);
         line_state = 2;

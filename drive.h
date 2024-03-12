@@ -10,14 +10,12 @@
 #define MOTOT_PWM_2 5
 #define MOTOR_DIR_2 13
 
-#define PWM_FREQUENCY 250
+#define PWM_FREQUENCY 400
 
 #define STEPS_PER_INCH 18.182
 #define STEPS_PER_ROTATION 484
 
 #define STEP_MODE 0.5
-
-#define TOTAL_STATES 6
 
 static int total_steps2 = 0;
 static int total_steps3 = 0;
@@ -78,6 +76,10 @@ void driveStraight (double distance, int direction) {
  */
 void driveDifferentialy (double distance, int direction, double speed_modifier) {
     steps_needed = round(distance*STEPS_PER_INCH/STEP_MODE);
+    
+    if (PWM_FREQUENCY/speed_modifier <= 200) {
+        speed_modifier = 3;
+    }
     
     if (direction == LEFT) {
         steps_needed2 = steps_needed/speed_modifier;
