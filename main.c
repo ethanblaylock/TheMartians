@@ -12,7 +12,7 @@
 int main(void) {
     // States : FOLLOW_LINE, NAVIGATE_CANYON
     setup();
-    enum line_state current_state = FOLLOW_LINE; // Sets current_state
+    enum line_state current_state = NAVIGATE_CANYON; // Sets current_state
     while(1) {
         // Figures out what to do based on current state
         if (current_state == FOLLOW_LINE) {

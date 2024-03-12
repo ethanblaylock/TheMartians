@@ -8,8 +8,8 @@
 #define FOCS 8000000
 #define FCY FOCS/2
 
-#define ANALOG_INPUTS 4
-#define ANALOG_PINS 0b0010000000010011
+#define ANALOG_INPUTS 6
+#define ANALOG_PINS 0b0011100000010011
 
 enum line_state {FOLLOW_LINE, NAVIGATE_CANYON};
 
@@ -56,6 +56,10 @@ void configAD(void) {
     AD1CSSL = ANALOG_PINS;  // AD1CSSL<15:0> -- Selects
     //AD1CSSLbits.CSS11 = 1; Select specific pins or set entire register
     //AD1CSSLbits.CSS9 = 1;
+    //AD1CSSLbits.CSS0 = 1;
+    //AD1CSSLbits.CSS1 = 1;
+    //AD1CSSLbits.CSS11 = 1;
+    //AD1CSSLbits.CSS12 = 1;
                                    // which ADC pins to scan
                                    // -- see the CSCNA bits in AD1CON2
 
