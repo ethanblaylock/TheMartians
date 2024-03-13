@@ -9,6 +9,8 @@
 
 #define LEFT_QRD ADC1BUF0
 #define RIGHT_QRD ADC1BUF1
+#define STRIPE_QRD ADC1BUF4
+
 
 #define STRAIGHT_DISTANCE 1 // Inches
 
@@ -57,7 +59,21 @@ void followLine(void) {
      
      
      // State transition logic
-     
+     if (stripe_steps > 5.5*STEPS_PER_INCH) {
+         stripe_flag = false;
+         stripe_steps = 0;
+         if (stripe_count == 4) {
+             turnRobot(360, CLOCKWISE);
+             while(!drive_completed) {}
+         }
+         else if (stripe_count == 6) {
+             turnRobot(360, COUNTERCLOCKWISE);
+             while(!drive_completed) {}
+         }
+         else if (stripe_count == 8) {
+             current_state = NAVIGATE_CANYON;
+         }
+     }
 }
 #endif	/* LINE_H */
 

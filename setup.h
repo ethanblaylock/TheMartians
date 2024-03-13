@@ -105,7 +105,15 @@ void configInterrupts(void) {
     _OC3IP = 4;
     _OC3IE = 1;
     _OC3IF = 0;
+    
+    _CN6IE = 0;
+    _CN6PUE = 0;
+    _CNIP = 6;
+    _CNIF = 0;
+    _CNIE = 0;
+    
 }
+
 
 /**
  * Sets the given pins for input or output
