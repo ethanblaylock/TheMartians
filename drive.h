@@ -8,13 +8,13 @@
 #define MOTOR_PWM_1 4
 #define MOTOR_DIR_1 12
 
-#define MOTOT_PWM_2 5
+#define MOTOR_PWM_2 5
 #define MOTOR_DIR_2 13
 
 #define PWM_FREQUENCY 400
-
+ 
 #define STEPS_PER_INCH 18.182
-#define STEPS_PER_ROTATION 484
+#define STEPS_PER_ROTATION 492
 
 #define STEP_MODE 0.5
 
@@ -23,9 +23,9 @@ static int total_steps3 = 0;
 static int steps_needed = 0;
 static int steps_needed2 = 0;
 static int steps_needed3 = 0;
-static int current_state = 0;
 static bool drive_completed = false;
 static bool stripe_flag = false;
+static bool high_to_low = true;
 static int stripe_count = 0;
 static int stripe_steps = 0;
 
@@ -59,7 +59,7 @@ void turnRobot(double degrees, int direction) {
     steps_needed2 = steps_needed;
     steps_needed3 = steps_needed;
     driveMotor(MOTOR_PWM_1, PWM_FREQUENCY, MOTOR_DIR_1, direction);
-    driveMotor(MOTOT_PWM_2, PWM_FREQUENCY, MOTOR_DIR_2, direction ^ 1);
+    driveMotor(MOTOR_PWM_2, PWM_FREQUENCY, MOTOR_DIR_2, direction ^ 1);
 }
 
 /**
@@ -73,7 +73,7 @@ void driveStraight (double distance, int direction) {
     steps_needed2 = steps_needed;
     steps_needed3 = steps_needed;
     driveMotor(MOTOR_PWM_1, PWM_FREQUENCY, MOTOR_DIR_1, direction);
-    driveMotor(MOTOT_PWM_2, PWM_FREQUENCY, MOTOR_DIR_2, direction);
+    driveMotor(MOTOR_PWM_2, PWM_FREQUENCY, MOTOR_DIR_2, direction);
 }
 
 /**
@@ -97,14 +97,14 @@ void driveDifferentialy (double distance, int direction, double speed_modifier) 
     if (direction == LEFT) {
         steps_needed2 = steps_needed/speed_modifier;
         steps_needed3 = steps_needed*speed_modifier;
-        driveMotor(MOTOT_PWM_2, PWM_FREQUENCY*speed_modifier, MOTOR_DIR_2, REVERSE);
+        driveMotor(MOTOR_PWM_2, PWM_FREQUENCY*speed_modifier, MOTOR_DIR_2, REVERSE);
         driveMotor(MOTOR_PWM_1, PWM_FREQUENCY/speed_modifier, MOTOR_DIR_1, REVERSE);
     }
     else if (direction == RIGHT) {
         steps_needed2 = steps_needed*speed_modifier;
         steps_needed3 = steps_needed/speed_modifier;
         driveMotor(MOTOR_PWM_1, PWM_FREQUENCY*speed_modifier, MOTOR_DIR_1, REVERSE);
-        driveMotor(MOTOT_PWM_2, PWM_FREQUENCY/speed_modifier, MOTOR_DIR_2, REVERSE);
+        driveMotor(MOTOR_PWM_2, PWM_FREQUENCY/speed_modifier, MOTOR_DIR_2, REVERSE);
     }
     
     
@@ -152,11 +152,28 @@ void __attribute__((interrupt, no_auto_psv)) _OC3Interrupt(void) {
     }
 }
 
+/*
 void __attribute__((interrupt, no_auto_psv)) _CNInterrupt(void) {
     _CNIF = 0;
     stripe_count++;
     if (!stripe_flag) {
         stripe_flag = true;
+    }
+}
+*/
+ 
+void _ISR _ADC1Interrupt(void) {
+    _AD1IF = 0;
+    if (ADC1BUF4 < 1200) {
+        if (high_to_low) {
+            stripe_count++;
+            high_to_low = false;
+        }
+        stripe_flag = true;
+        stripe_steps = 0;
+    }
+    else {
+        high_to_low = true;
     }
 }
 

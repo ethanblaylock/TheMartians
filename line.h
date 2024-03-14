@@ -29,7 +29,7 @@ static int line_state = 1; // A variable for keeping track of what state of line
  * for larger readjustments
  */
 void followLine(void) {
-     if (LEFT_QRD >= QRD_THRESHOLD && RIGHT_QRD >= QRD_THRESHOLD) {/* Both see black */
+    if (LEFT_QRD >= QRD_THRESHOLD && RIGHT_QRD >= QRD_THRESHOLD) {/* Both see black */
         driveStraight(STRAIGHT_DISTANCE, REVERSE);
         line_state = 0;
     }
@@ -59,20 +59,17 @@ void followLine(void) {
      
      
      // State transition logic
-     if (stripe_steps > 5.5*STEPS_PER_INCH) {
+    if (stripe_steps > 10*STEPS_PER_INCH) {
          stripe_flag = false;
          stripe_steps = 0;
-         if (stripe_count == 4) {
-             turnRobot(360, CLOCKWISE);
-             while(!drive_completed) {}
+         if (stripe_count == 2) {
          }
-         else if (stripe_count == 6) {
-             turnRobot(360, COUNTERCLOCKWISE);
-             while(!drive_completed) {}
+         else if (stripe_count == 3) {
          }
-         else if (stripe_count == 8) {
-             current_state = NAVIGATE_CANYON;
+         else if (stripe_count >= 4) {
+            current_state = NAVIGATE_CANYON;
          }
+         stripe_count = 0;
      }
 }
 #endif	/* LINE_H */

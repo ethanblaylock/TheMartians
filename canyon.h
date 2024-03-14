@@ -13,7 +13,8 @@
 #define RIGHT_SONAR ADC1BUF12
 
 #define TILE_LENGTH 23 //inches
-#define MAX_WALL_DISTANCE 100
+#define MAX_WALL_DISTANCE 9
+#define OPEN_DISTANCE 15
 #define STRAIGHT_DISTANCE 1 // Inches
 #define DISTANCE_FROM_SONAR_TO_CENTER 3.5 // inches
 #define HYSTERESIS_DISTANCE 15
@@ -28,47 +29,23 @@ double getDistance(double voltage) {
 }
 
 void makeLeftCanyonTurn() {
-    turnRobot(92, CLOCKWISE);
+    turnRobot(90, CLOCKWISE);
     while (!drive_completed) {}
     driveStraight(TILE_LENGTH/2, REVERSE);
     while (!drive_completed) {}
 }
 
 void makeRightCanyonTurn() {
-    turnRobot (92, COUNTERCLOCKWISE);
+    turnRobot (90, COUNTERCLOCKWISE);
     while (!drive_completed) {}
     driveStraight(TILE_LENGTH/2, REVERSE);
     while (!drive_completed) {}
 }
 
-/*
-void navigateCanyon(void) {
-    // 23 inches between canyon walls
-    if (getDistance(LEFT_SONAR) < MAX_WALL_DISTANCE && getDistance(RIGHT_SONAR) < MAX_WALL_DISTANCE) {
-        if (fabs(getDistance(LEFT_SONAR) - getDistance(RIGHT_SONAR)) > HYSTERESIS_DISTANCE) {
-            if (getDistance(LEFT_SONAR) > getDistance(RIGHT_SONAR)) {
-                driveDifferentialy(STRAIGHT_DISTANCE, RIGHT, CANYON_SPEED_MODIFIER);
-            } else {
-                driveDifferentialy(STRAIGHT_DISTANCE, LEFT, CANYON_SPEED_MODIFIER);
-            }
-        } else {
-            driveStraight(STRAIGHT_DISTANCE, REVERSE);
-        }
-    } 
-    else if (getDistance(LEFT_SONAR) > MAX_WALL_DISTANCE) {
-        makeLeftCanyonTurn();
-    }
-    else if (getDistance(RIGHT_SONAR) > MAX_WALL_DISTANCE) {
-        makeRightCanyonTurn();
-    }
-    else { 
-        stopRobot();
-    }
-}*/
 
 void navigateCanyon(void) {
-    if (getDistance(FRONT_SONAR) < 9) {
-        if (getDistance(RIGHT_SONAR) > 15) {
+    if (getDistance(FRONT_SONAR) < MAX_WALL_DISTANCE) {
+        if (getDistance(RIGHT_SONAR) > OPEN_DISTANCE) {
             makeRightCanyonTurn();
         }
         else {
@@ -77,7 +54,22 @@ void navigateCanyon(void) {
     } else {
         driveStraight(STRAIGHT_DISTANCE, REVERSE);
     }
+    
+    // State transition logic
+    if (LEFT_QRD <= QRD_THRESHOLD || RIGHT_QRD <= QRD_THRESHOLD) {
+        getBackOnLine();
+    }
 }
+
+void getBackOnLine(void) {
+    if (LEFT_QRD <= QRD_THRESHOLD && RIGHT_QRD >= QRD_THRESHOLD) {
+        driveMotor(MOTOR_PWM_1, PWM_FREQUENCY, MOTOR_DIR_1, FORWARD);
+    }
+    else if (LEFT_QRD >= QRD_THRESHOLD && RIGHT_QRD <= QRD_THRESHOLD) {
+        driveMotor(MOTOR_PWM_2, PWM_FREQUENCY, MOTOR_DIR_1, FORWARD);
+    }
+}
+
 
 #endif	/* CANYON_H */
 

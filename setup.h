@@ -12,6 +12,7 @@
 #define ANALOG_PINS 0b0011100000010011
 
 enum line_state {FOLLOW_LINE, NAVIGATE_CANYON};
+enum line_state current_state = FOLLOW_LINE; // Sets current_state
 
 // This function configures the A/D to read from a
 // single channel in auto conversion mode.
@@ -106,11 +107,17 @@ void configInterrupts(void) {
     _OC3IE = 1;
     _OC3IF = 0;
     
-    _CN6IE = 0;
+    /*
+    _CN6IE = 1;
     _CN6PUE = 0;
     _CNIP = 6;
     _CNIF = 0;
-    _CNIE = 0;
+    _CNIE = 1;
+    */
+      
+    _AD1IE = 1;
+    _AD1IP = 5;
+    _AD1IF = 0;
     
 }
 
@@ -121,6 +128,7 @@ void configInterrupts(void) {
 void configPins(void) {
     _TRISB9 = 0;
     _TRISB8 = 0;
+    _TRISB15 = 0;
 }
 
 /**
@@ -134,7 +142,7 @@ void setup() {
     
     CLKDIVbits.RCDIV = 0;
             
-    //current_state = 1;
+    
     
 }
 
