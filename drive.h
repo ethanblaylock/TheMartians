@@ -5,18 +5,22 @@
 #include "helper.h"
 #include <stdbool.h>
 
-#define MOTOR_PWM_1 4
+#define MOTOR_PWM_1 4 // Left
 #define MOTOR_DIR_1 12
 
-#define MOTOR_PWM_2 5
+#define MOTOR_PWM_2 5 // Right
 #define MOTOR_DIR_2 13
 
-#define PWM_FREQUENCY 400
- 
+#define PWM_FREQUENCY 1200
+#define CANYON_FREQUENCY 500
+#define TURN_PWM_FREQUENCY 900
+
 #define STEPS_PER_INCH 18.182
-#define STEPS_PER_ROTATION 492
+#define STEPS_PER_ROTATION 498
 
 #define STEP_MODE 0.5
+
+#define PWM_INCREMENT 1
 
 static int total_steps2 = 0;
 static int total_steps3 = 0;
@@ -28,6 +32,9 @@ static bool stripe_flag = false;
 static bool high_to_low = true;
 static int stripe_count = 0;
 static int stripe_steps = 0;
+static bool turn_flag = false;
+static int straight_steps = 0;
+static double motor_speed_modifier = 1.0;
 
 enum pinState {HIGH = 1, LOW = 0};
 enum circle {CLOCKWISE = 1, COUNTERCLOCKWISE = 0};
@@ -55,11 +62,17 @@ void driveMotor(int motorPWMPin, int frequency, int motorDirPin, int direction) 
  */
 void turnRobot(double degrees, int direction) {
     _OC3IE = 0;
+    if (current_state == NAVIGATE_CANYON) {
+        if (chosen_frequency > CANYON_FREQUENCY) {
+            chosen_frequency = chosen_frequency - PWM_INCREMENT;
+        }
+        
+    }
     steps_needed = round((degrees/360.0)*STEPS_PER_ROTATION/STEP_MODE);
     steps_needed2 = steps_needed;
     steps_needed3 = steps_needed;
-    driveMotor(MOTOR_PWM_1, PWM_FREQUENCY, MOTOR_DIR_1, direction);
-    driveMotor(MOTOR_PWM_2, PWM_FREQUENCY, MOTOR_DIR_2, direction ^ 1);
+    driveMotor(MOTOR_PWM_1, chosen_frequency, MOTOR_DIR_1, direction);
+    driveMotor(MOTOR_PWM_2, chosen_frequency, MOTOR_DIR_2, direction ^ 1);
 }
 
 /**
@@ -69,11 +82,19 @@ void turnRobot(double degrees, int direction) {
  */
 void driveStraight (double distance, int direction) {
     _OC3IE = 0;
+    if (chosen_frequency < PWM_FREQUENCY && current_state != NAVIGATE_CANYON) {
+        chosen_frequency = chosen_frequency + PWM_INCREMENT;
+    }
+    if (current_state == NAVIGATE_CANYON) {
+        if (chosen_frequency > CANYON_FREQUENCY) {
+            chosen_frequency = chosen_frequency - PWM_INCREMENT;
+        }
+    }
     steps_needed = round(distance*STEPS_PER_INCH/STEP_MODE);
     steps_needed2 = steps_needed;
     steps_needed3 = steps_needed;
-    driveMotor(MOTOR_PWM_1, PWM_FREQUENCY, MOTOR_DIR_1, direction);
-    driveMotor(MOTOR_PWM_2, PWM_FREQUENCY, MOTOR_DIR_2, direction);
+    driveMotor(MOTOR_PWM_1, chosen_frequency, MOTOR_DIR_1, direction);
+    driveMotor(MOTOR_PWM_2, chosen_frequency, MOTOR_DIR_2, direction);
 }
 
 /**
@@ -86,25 +107,30 @@ void driveStraight (double distance, int direction) {
 
 void driveDifferentialy (double distance, int direction, double speed_modifier) {
     steps_needed = round(distance*STEPS_PER_INCH/STEP_MODE);
+    if (chosen_frequency > TURN_PWM_FREQUENCY) {
+        chosen_frequency = chosen_frequency - speed_modifier*PWM_INCREMENT;
+    }
+    motor_speed_modifier = speed_modifier;
     if (_OC3IE == 0) {
        _OC3IE = 1; 
        _OC3IF = 0;
     }
-    if (PWM_FREQUENCY/speed_modifier <= 200) {
-        speed_modifier = 3;
+    if (chosen_frequency/motor_speed_modifier <= 200) {
+        motor_speed_modifier = 6;
     }
     
+    
     if (direction == LEFT) {
-        steps_needed2 = steps_needed/speed_modifier;
-        steps_needed3 = steps_needed*speed_modifier;
-        driveMotor(MOTOR_PWM_2, PWM_FREQUENCY*speed_modifier, MOTOR_DIR_2, REVERSE);
-        driveMotor(MOTOR_PWM_1, PWM_FREQUENCY/speed_modifier, MOTOR_DIR_1, REVERSE);
+        steps_needed2 = steps_needed/motor_speed_modifier;
+        steps_needed3 = steps_needed*motor_speed_modifier;
+        driveMotor(MOTOR_PWM_2, chosen_frequency*motor_speed_modifier, MOTOR_DIR_2, FORWARD);
+        driveMotor(MOTOR_PWM_1, chosen_frequency/motor_speed_modifier, MOTOR_DIR_1, FORWARD);
     }
     else if (direction == RIGHT) {
-        steps_needed2 = steps_needed*speed_modifier;
-        steps_needed3 = steps_needed/speed_modifier;
-        driveMotor(MOTOR_PWM_1, PWM_FREQUENCY*speed_modifier, MOTOR_DIR_1, REVERSE);
-        driveMotor(MOTOR_PWM_2, PWM_FREQUENCY/speed_modifier, MOTOR_DIR_2, REVERSE);
+        steps_needed2 = steps_needed*motor_speed_modifier;
+        steps_needed3 = steps_needed/motor_speed_modifier;
+        driveMotor(MOTOR_PWM_1, chosen_frequency*motor_speed_modifier, MOTOR_DIR_1, FORWARD);
+        driveMotor(MOTOR_PWM_2, chosen_frequency/motor_speed_modifier, MOTOR_DIR_2, FORWARD);
     }
     
     

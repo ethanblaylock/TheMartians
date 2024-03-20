@@ -2,17 +2,22 @@
 #define	SETUP_H
 
 #include "xc.h" 
+#include <stdbool.h>
 
 #pragma config FNOSC = FRC
 
 #define FOCS 8000000
 #define FCY FOCS/2
 
+#define PWM_FREQUENCY 1200
+
 #define ANALOG_INPUTS 6
 #define ANALOG_PINS 0b0011100000010011
 
 enum line_state {FOLLOW_LINE, NAVIGATE_CANYON};
 enum line_state current_state = FOLLOW_LINE; // Sets current_state
+static bool has_turned = false;
+static double chosen_frequency = PWM_FREQUENCY;
 
 // This function configures the A/D to read from a
 // single channel in auto conversion mode.

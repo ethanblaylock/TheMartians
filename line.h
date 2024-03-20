@@ -19,7 +19,7 @@
 
 #define DISTANCE_BETWEEN_QRD 2.25 // Inches
 
-#define SPEED_MODIFIER_INCREMENT 0.01
+#define SPEED_MODIFIER_INCREMENT 0.025
 
 static double speed_modifier = 1; // A multiplier for speed
 static int line_state = 1; // A variable for keeping track of what state of line following the robot is on
@@ -30,7 +30,8 @@ static int line_state = 1; // A variable for keeping track of what state of line
  */
 void followLine(void) {
     if (LEFT_QRD >= QRD_THRESHOLD && RIGHT_QRD >= QRD_THRESHOLD) {/* Both see black */
-        driveStraight(STRAIGHT_DISTANCE, REVERSE);
+        speed_modifier = 1.0;
+        driveStraight(STRAIGHT_DISTANCE, FORWARD);
         line_state = 0;
     }
     else if (LEFT_QRD >= QRD_THRESHOLD && RIGHT_QRD <= QRD_THRESHOLD) { /* Robot is drifting to the left */
@@ -56,8 +57,8 @@ void followLine(void) {
         stopRobot();
         line_state = 3;
     }
-     
-     
+    
+    
      // State transition logic
     if (stripe_steps > 10*STEPS_PER_INCH) {
          stripe_flag = false;
@@ -66,11 +67,14 @@ void followLine(void) {
          }
          else if (stripe_count == 3) {
          }
-         else if (stripe_count >= 4) {
+         else if (stripe_count == 4) {
+            has_turned = false;
             current_state = NAVIGATE_CANYON;
          }
          stripe_count = 0;
      }
+     
 }
+     
 #endif	/* LINE_H */
 
