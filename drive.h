@@ -11,9 +11,12 @@
 #define MOTOR_PWM_2 5 // Right
 #define MOTOR_DIR_2 13
 
-#define PWM_FREQUENCY 1200
+#define PWM_FREQUENCY 1000
 #define CANYON_FREQUENCY 500
-#define TURN_PWM_FREQUENCY 900
+#define CANYON_TURN_FREQUENCY 200
+#define TURN_PWM_FREQUENCY 600
+
+#define MAX_SPEED_MODIFIER 5
 
 #define STEPS_PER_INCH 18.182
 #define STEPS_PER_ROTATION 498
@@ -86,8 +89,17 @@ void driveStraight (double distance, int direction) {
         chosen_frequency = chosen_frequency + PWM_INCREMENT;
     }
     if (current_state == NAVIGATE_CANYON) {
-        if (chosen_frequency > CANYON_FREQUENCY) {
-            chosen_frequency = chosen_frequency - PWM_INCREMENT;
+        if (slow_down_flag) {
+            if (chosen_frequency > CANYON_TURN_FREQUENCY) {
+                chosen_frequency = chosen_frequency - 2*PWM_INCREMENT;
+            }
+        } else {
+            if (chosen_frequency < CANYON_FREQUENCY) {
+                chosen_frequency = chosen_frequency + PWM_INCREMENT;
+            } 
+            else if (chosen_frequency > CANYON_FREQUENCY) {
+                chosen_frequency = chosen_frequency - PWM_INCREMENT;
+            }
         }
     }
     steps_needed = round(distance*STEPS_PER_INCH/STEP_MODE);
@@ -97,14 +109,21 @@ void driveStraight (double distance, int direction) {
     driveMotor(MOTOR_PWM_2, chosen_frequency, MOTOR_DIR_2, direction);
 }
 
+void driveSlow (double distance, int direction) {
+    _OC3IE = 0;
+    chosen_frequency = 400;
+    steps_needed = round(distance*STEPS_PER_INCH/STEP_MODE);
+    steps_needed2 = steps_needed;
+    steps_needed3 = steps_needed;
+    driveMotor(MOTOR_PWM_1, chosen_frequency, MOTOR_DIR_1, direction);
+    driveMotor(MOTOR_PWM_2, chosen_frequency, MOTOR_DIR_2, direction);
+}
 /**
  * Drive the two motors at different speeds to correct when off the line
  * @param distance The readjustment distance
  * @param direction Forward or reverse
  * @param speed_modifier the speed modifier at which one motor is sped up and the other slowed down
  */
-
-
 void driveDifferentialy (double distance, int direction, double speed_modifier) {
     steps_needed = round(distance*STEPS_PER_INCH/STEP_MODE);
     if (chosen_frequency > TURN_PWM_FREQUENCY) {
@@ -116,7 +135,7 @@ void driveDifferentialy (double distance, int direction, double speed_modifier) 
        _OC3IF = 0;
     }
     if (chosen_frequency/motor_speed_modifier <= 200) {
-        motor_speed_modifier = 6;
+        motor_speed_modifier = MAX_SPEED_MODIFIER;
     }
     
     
@@ -189,8 +208,9 @@ void __attribute__((interrupt, no_auto_psv)) _CNInterrupt(void) {
 */
  
 void _ISR _ADC1Interrupt(void) {
+    stripes_detected = stripe_count;
     _AD1IF = 0;
-    if (ADC1BUF4 < 1200) {
+    if (ADC1BUF4 < 2048) {
         if (high_to_low) {
             stripe_count++;
             high_to_low = false;

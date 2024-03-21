@@ -23,6 +23,7 @@
       <itemPath>helper.h</itemPath>
       <itemPath>setup.h</itemPath>
       <itemPath>canyon.h</itemPath>
+      <itemPath>start.h</itemPath>
     </logicalFolder>
   </logicalFolder>
   <projectmakefile>Makefile</projectmakefile>

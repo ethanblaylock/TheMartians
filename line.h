@@ -19,7 +19,7 @@
 
 #define DISTANCE_BETWEEN_QRD 2.25 // Inches
 
-#define SPEED_MODIFIER_INCREMENT 0.025
+#define SPEED_MODIFIER_INCREMENT 0.02
 
 static double speed_modifier = 1; // A multiplier for speed
 static int line_state = 1; // A variable for keeping track of what state of line following the robot is on
@@ -60,7 +60,7 @@ void followLine(void) {
     
     
      // State transition logic
-    if (stripe_steps > 10*STEPS_PER_INCH) {
+    if (stripe_steps > 6*STEPS_PER_INCH) {
          stripe_flag = false;
          stripe_steps = 0;
          if (stripe_count == 2) {

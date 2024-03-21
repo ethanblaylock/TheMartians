@@ -9,15 +9,17 @@
 #define FOCS 8000000
 #define FCY FOCS/2
 
-#define PWM_FREQUENCY 1200
+#define PWM_FREQUENCY 400
 
 #define ANALOG_INPUTS 6
 #define ANALOG_PINS 0b0011100000010011
 
-enum line_state {FOLLOW_LINE, NAVIGATE_CANYON};
-enum line_state current_state = FOLLOW_LINE; // Sets current_state
-static bool has_turned = false;
-static double chosen_frequency = PWM_FREQUENCY;
+enum line_state {START, FOLLOW_LINE, NAVIGATE_CANYON};
+enum line_state current_state = START; // Sets current_state
+static bool has_turned = false; // Whether the robot has turned in the canyon
+static double chosen_frequency = PWM_FREQUENCY; // The frequency that drive the motors
+static int stripes_detected = 0;
+static bool slow_down_flag = false;
 
 // This function configures the A/D to read from a
 // single channel in auto conversion mode.
@@ -121,7 +123,7 @@ void configInterrupts(void) {
     */
       
     _AD1IE = 1;
-    _AD1IP = 5;
+    _AD1IP = 6;
     _AD1IF = 0;
     
 }
@@ -134,6 +136,10 @@ void configPins(void) {
     _TRISB9 = 0;
     _TRISB8 = 0;
     _TRISB15 = 0;
+    
+    _TRISB7 = 0;
+    _TRISB14 = 0;
+    _TRISA4 = 0;
 }
 
 /**
