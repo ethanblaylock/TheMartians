@@ -9,68 +9,43 @@
 #include "line.h"
 #include "canyon.h"
 #include "start.h"
+#include "collection.h"
+#include "return.h"
+#include "transmission.h"
+#include "servicing.h"
 
 int main(void) {
     // States : FOLLOW_LINE, NAVIGATE_CANYON
     setup();
-
+    
     while(1) {
-        
-        switch(stripes_detected) {
-            case 0:
-                _LATB7 = 0;
-                _LATB15 = 0;
-                _LATB14 = 0;
-                break;
-            case 1:
-                _LATB7 = 1;
-                _LATB15 = 0;
-                _LATB14 = 0;
-                break;
-            case 2:
-                _LATB7 = 0;
-                _LATB15 = 1;
-                _LATB14 = 0;
-                break;
-            case 3:
-                _LATB7 = 1;
-                _LATB15 = 1;
-                _LATB14 = 0;
-                break;
-            case 4:
-                _LATB7 = 0;
-                _LATB15 = 0;
-                _LATB14 = 1;
-                break;
-            case 5:
-                _LATB7 = 1;
-                _LATB15 = 0;
-                _LATB14 = 1;
-                break;
-            case 6:
-                _LATB7 = 0;
-                _LATB15 = 1;
-                _LATB14 = 1;
-                break;
-            case 7:
-                _LATB7 = 1;
-                _LATB15 = 1;
-                _LATB14 = 1;
-                break;
-                
-        }
+        _LATB7 = 1;
+        OC1R = servo_frequency; // Duty cycle
         // Figures out what to do based on current state
-        if (current_state == START) {
-            start();
+        switch(current_state) {
+            case START:
+                start();
+                break;
+            case FOLLOW_LINE:
+                followLine();
+                break;
+            case NAVIGATE_CANYON:
+                navigateCanyon();
+                break;
+            case COLLECT_SAMPLE:
+                collectSample();
+                break;
+            case RETURN_SAMPLE:
+                returnSample();
+                break;
+            case SERVICE_EQUIPMENT:
+                serviceEquipmentGun();
+                break;
+            case DATA_TRANSMISSION:
+                transmitData();
+                break;
         }
-        else if (current_state == FOLLOW_LINE) {
-            followLine();
-            _LATB15 = 0;
-        }
-        else if (current_state == NAVIGATE_CANYON) {
-            navigateCanyon();
-            _LATB15 = 1;
-        }
+        
     }
 
     return 0;

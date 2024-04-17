@@ -14,8 +14,8 @@
 
 #define TILE_LENGTH 23 //inches
 #define MAX_WALL_DISTANCE 8
-#define SLOW_DOWN_DISTANCE 16
-#define OPEN_DISTANCE 12
+#define SLOW_DOWN_DISTANCE 15
+#define OPEN_DISTANCE 20
 #define STRAIGHT_DISTANCE 1 // Inches
 #define DISTANCE_FROM_SONAR_TO_CENTER 3.5 // inches
 #define HYSTERESIS_DISTANCE 15
@@ -37,9 +37,11 @@ double getDistance(double voltage) {
  */
 void makeLeftCanyonTurn() {
     stopRobot();
+    drive_completed = false;
     turnRobot(90, COUNTERCLOCKWISE);
     while (!drive_completed) {}
     slow_down_flag = false;
+    drive_completed = false;
     driveStraight(TILE_LENGTH/2, FORWARD);
     while (!drive_completed) {
         driveStraight(TILE_LENGTH/2, FORWARD);
@@ -52,8 +54,11 @@ void makeLeftCanyonTurn() {
  */
 void makeRightCanyonTurn() {
     stopRobot();
+    drive_completed = false;
     turnRobot (90, CLOCKWISE);
     while (!drive_completed) {}
+    slow_down_flag = false;
+    drive_completed = false;
     driveStraight(TILE_LENGTH/2, FORWARD);
     while (!drive_completed) {
         driveStraight(TILE_LENGTH/2, FORWARD);
@@ -98,6 +103,8 @@ void navigateCanyon(void) {
  */
 void getBackOnLine(void) {
     while (current_state == NAVIGATE_CANYON) {
+        OC1RS = 39999; // Period
+        OC1R = servo_frequency; // Duty cycle
         if (LEFT_QRD <= QRD_THRESHOLD && RIGHT_QRD >= QRD_THRESHOLD) {
             stopRobot();
             driveMotor(MOTOR_PWM_2, PWM_FREQUENCY, MOTOR_DIR_2, FORWARD);
@@ -107,8 +114,15 @@ void getBackOnLine(void) {
             driveMotor(MOTOR_PWM_1, PWM_FREQUENCY, MOTOR_DIR_1, FORWARD);
         }
         else if (LEFT_QRD <= QRD_THRESHOLD && RIGHT_QRD <= QRD_THRESHOLD) {
+            drive_completed = false;
             driveStraight(5, FORWARD);
-            while(!drive_completed) {}
+            while(!drive_completed) {
+                if (chosen_frequency > 400) {
+                    chosen_frequency = chosen_frequency - 4;
+                }
+                driveStraight(5, FORWARD);
+            }
+            drive_completed = false;
             if (getDistance(RIGHT_SONAR) < OPEN_DISTANCE) {
                 turnRobot(90, CLOCKWISE);
             } else {
@@ -119,6 +133,7 @@ void getBackOnLine(void) {
             stripe_count = 0;
             stripe_flag = false;
             current_state = FOLLOW_LINE;
+            _AD1IE = 1;
         }
     }
 }

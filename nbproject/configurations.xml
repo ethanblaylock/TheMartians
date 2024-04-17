@@ -24,6 +24,11 @@
       <itemPath>setup.h</itemPath>
       <itemPath>canyon.h</itemPath>
       <itemPath>start.h</itemPath>
+      <itemPath>collection.h</itemPath>
+      <itemPath>return.h</itemPath>
+      <itemPath>servo.h</itemPath>
+      <itemPath>transmission.h</itemPath>
+      <itemPath>servicing.h</itemPath>
     </logicalFolder>
   </logicalFolder>
   <projectmakefile>Makefile</projectmakefile>

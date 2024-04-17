@@ -6,20 +6,22 @@
 
 #pragma config FNOSC = FRC
 
-#define FOCS 8000000
+#define FOCS 4000000
 #define FCY FOCS/2
 
-#define PWM_FREQUENCY 400
+#define PWM_FREQUENCY 400.0
 
-#define ANALOG_INPUTS 6
-#define ANALOG_PINS 0b0011100000010011
+#define ANALOG_INPUTS 9
+#define ANALOG_PINS 0b1111101000010011
 
-enum line_state {START, FOLLOW_LINE, NAVIGATE_CANYON};
+enum line_state {START, FOLLOW_LINE, NAVIGATE_CANYON, COLLECT_SAMPLE, RETURN_SAMPLE, DATA_TRANSMISSION, SERVICE_EQUIPMENT};
 enum line_state current_state = START; // Sets current_state
 static bool has_turned = false; // Whether the robot has turned in the canyon
 static double chosen_frequency = PWM_FREQUENCY; // The frequency that drive the motors
 static int stripes_detected = 0;
 static bool slow_down_flag = false;
+static bool timer_complete = false;
+static int servo_frequency = 1500;
 
 // This function configures the A/D to read from a
 // single channel in auto conversion mode.
@@ -42,7 +44,7 @@ void configAD(void) {
                   // location corresponding to channel
     _CSCNA = 1;   // AD1CON2<10> -- Does not scan inputs
                   // specified in AD1CSSx registers (instead
-                  // uses channels specified by CH0SA bits in
+                  // uses channels sp` ecified by CH0SA bits in
                   // AD1CHS register) -- Selecting '0' here
                   // probably makes writing to the AD1CSSL
                   // register unnecessary.
@@ -84,7 +86,9 @@ void configPWM(void) {
     OC1CON1bits.OCTSEL = 0b111; // System (peripheral) clock as timing source
     OC1CON2bits.SYNCSEL = 0x1F; // Select OC1 as synchronization source                       
     OC1CON2bits.OCTRIG = 0;     // Synchronizes with OC1 source instead of
-    OC1CON1bits.OCM = 0b110; 
+    OC1CON1bits.OCM = 0b0;
+    OC1RS = 39999; // Period
+    OC1R = servo_frequency; // Duty cycle
     
     OC2CON1 = 0;
     OC2CON2 = 0;
@@ -122,9 +126,13 @@ void configInterrupts(void) {
     _CNIE = 1;
     */
       
-    _AD1IE = 1;
+    _AD1IE = 0;
     _AD1IP = 6;
     _AD1IF = 0;
+    
+    _T1IE = 1;
+    _T1IP = 5;
+    _T1IF = 0;
     
 }
 
@@ -135,11 +143,12 @@ void configInterrupts(void) {
 void configPins(void) {
     _TRISB9 = 0;
     _TRISB8 = 0;
-    _TRISB15 = 0;
-    
+    _TRISB1 = 0;
+
     _TRISB7 = 0;
     _TRISB14 = 0;
     _TRISA4 = 0;
+    _LATB7 = 1;
 }
 
 /**
@@ -151,7 +160,7 @@ void setup() {
     configInterrupts();
     configPins();
     
-    CLKDIVbits.RCDIV = 0;
+    CLKDIVbits.RCDIV = 1;
             
     
     

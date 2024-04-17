@@ -12,6 +12,9 @@
  * @param prescale Defaults to 1. Accepts 1,8,64, or 256 as a prescale.
  */
 void createTimer(int timerNumber, int periodValue, int prescale) {
+    timer_complete = false;
+    _T1IE = 1;
+    _T1IF = 0;
     int tckpsValue = 0b0;
     //Takes the parameter and turns it into the needed TCKPS bits
     switch(prescale) {
@@ -69,6 +72,11 @@ void createTimer(int timerNumber, int periodValue, int prescale) {
     }
 }
 
+void stopTimers(void) {
+    T1CONbits.TON = 0;
+    _T1IE = 0;
+    TMR1 = 0;
+}
 /**
  * Configure a certain PWM to start running
  * @param ocNum the specific OC to turn on
@@ -76,7 +84,7 @@ void createTimer(int timerNumber, int periodValue, int prescale) {
  * @param dutyCycle the duty cycle as a fraction of 1
  */
 void configurePWM(int pinNum, double period, double dutyCycle) {
-    int value = round((1/period)*FCY) - 1;
+    int value = round((1/(period/2))*FCY) - 1;
     int dutyValue = round(dutyCycle*value);
     
     switch(pinNum) {

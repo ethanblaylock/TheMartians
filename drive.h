@@ -12,11 +12,15 @@
 #define MOTOR_DIR_2 13
 
 #define PWM_FREQUENCY 1000
-#define CANYON_FREQUENCY 500
-#define CANYON_TURN_FREQUENCY 200
+#define CANYON_FREQUENCY 700
+#define CANYON_TURN_FREQUENCY 300
 #define TURN_PWM_FREQUENCY 600
+#define COLLECT_FREQUENCY 500
 
-#define MAX_SPEED_MODIFIER 5
+#define MAX_PWM_FREQUENCY 2400
+#define MIN_PWM_FREQUENCY 200
+
+#define MAX_SPEED_MODIFIER 2
 
 #define STEPS_PER_INCH 18.182
 #define STEPS_PER_ROTATION 498
@@ -37,7 +41,15 @@ static int stripe_count = 0;
 static int stripe_steps = 0;
 static bool turn_flag = false;
 static int straight_steps = 0;
+static double motor_speed_modifier_high = 1.0;
+static double motor_speed_modifier_low = 1.0;
 static double motor_speed_modifier = 1.0;
+static bool collect_flag = false;
+static int end_detection = 0;
+static bool service_flag = false;
+static int end_steps = 0;
+static bool end_flag = false;
+
 
 enum pinState {HIGH = 1, LOW = 0};
 enum circle {CLOCKWISE = 1, COUNTERCLOCKWISE = 0};
@@ -53,7 +65,6 @@ enum leftRight {LEFT = 0, RIGHT = 1};
  * @param direction High or Low
  */
 void driveMotor(int motorPWMPin, int frequency, int motorDirPin, int direction) {
-    drive_completed = false;
     configurePWM(motorPWMPin, frequency, 0.5);
     setOutputPin(motorDirPin, direction);
 }
@@ -66,10 +77,15 @@ void driveMotor(int motorPWMPin, int frequency, int motorDirPin, int direction) 
 void turnRobot(double degrees, int direction) {
     _OC3IE = 0;
     if (current_state == NAVIGATE_CANYON) {
-        if (chosen_frequency > CANYON_FREQUENCY) {
+        if (chosen_frequency > CANYON_TURN_FREQUENCY) {
             chosen_frequency = chosen_frequency - PWM_INCREMENT;
         }
         
+    }
+    if (current_state == COLLECT_SAMPLE || current_state == RETURN_SAMPLE || current_state == DATA_TRANSMISSION || current_state == SERVICE_EQUIPMENT) {
+        if (chosen_frequency > COLLECT_FREQUENCY) {
+            chosen_frequency = chosen_frequency - PWM_INCREMENT;
+        }
     }
     steps_needed = round((degrees/360.0)*STEPS_PER_ROTATION/STEP_MODE);
     steps_needed2 = steps_needed;
@@ -91,7 +107,7 @@ void driveStraight (double distance, int direction) {
     if (current_state == NAVIGATE_CANYON) {
         if (slow_down_flag) {
             if (chosen_frequency > CANYON_TURN_FREQUENCY) {
-                chosen_frequency = chosen_frequency - 2*PWM_INCREMENT;
+                chosen_frequency = chosen_frequency - 4*PWM_INCREMENT;
             }
         } else {
             if (chosen_frequency < CANYON_FREQUENCY) {
@@ -99,6 +115,20 @@ void driveStraight (double distance, int direction) {
             } 
             else if (chosen_frequency > CANYON_FREQUENCY) {
                 chosen_frequency = chosen_frequency - PWM_INCREMENT;
+            }
+        }
+    }
+    if (current_state == COLLECT_SAMPLE || current_state == RETURN_SAMPLE || current_state == DATA_TRANSMISSION || current_state == SERVICE_EQUIPMENT) {
+        if (!collect_flag) {
+            if (chosen_frequency > COLLECT_FREQUENCY) {
+                chosen_frequency = chosen_frequency - 4*PWM_INCREMENT;
+            }
+            else if (chosen_frequency < COLLECT_FREQUENCY) {
+                chosen_frequency = chosen_frequency + 2*PWM_INCREMENT;
+            }
+        } else {
+            if (chosen_frequency > CANYON_TURN_FREQUENCY) {
+                chosen_frequency = chosen_frequency - 12*PWM_INCREMENT;
             }
         }
     }
@@ -124,32 +154,41 @@ void driveSlow (double distance, int direction) {
  * @param direction Forward or reverse
  * @param speed_modifier the speed modifier at which one motor is sped up and the other slowed down
  */
-void driveDifferentialy (double distance, int direction, double speed_modifier) {
+void driveDifferentialy (double distance, int direction, double speed_modifier, bool straight) {
     steps_needed = round(distance*STEPS_PER_INCH/STEP_MODE);
-    if (chosen_frequency > TURN_PWM_FREQUENCY) {
+    if (straight) {
+        if (chosen_frequency < PWM_FREQUENCY) {
+            chosen_frequency = chosen_frequency + PWM_INCREMENT;
+        }
+    } else {
+        if (chosen_frequency > TURN_PWM_FREQUENCY) {
         chosen_frequency = chosen_frequency - speed_modifier*PWM_INCREMENT;
     }
+    }
+    
     motor_speed_modifier = speed_modifier;
     if (_OC3IE == 0) {
        _OC3IE = 1; 
        _OC3IF = 0;
     }
-    if (chosen_frequency/motor_speed_modifier <= 200) {
-        motor_speed_modifier = MAX_SPEED_MODIFIER;
+    if (chosen_frequency/motor_speed_modifier_low < MIN_PWM_FREQUENCY) {
+        motor_speed_modifier_low = chosen_frequency/MIN_PWM_FREQUENCY;
     }
-    
+    else if (chosen_frequency*motor_speed_modifier_high > MAX_PWM_FREQUENCY) {
+        motor_speed_modifier_high = MAX_PWM_FREQUENCY/chosen_frequency;
+    }
     
     if (direction == LEFT) {
-        steps_needed2 = steps_needed/motor_speed_modifier;
-        steps_needed3 = steps_needed*motor_speed_modifier;
-        driveMotor(MOTOR_PWM_2, chosen_frequency*motor_speed_modifier, MOTOR_DIR_2, FORWARD);
-        driveMotor(MOTOR_PWM_1, chosen_frequency/motor_speed_modifier, MOTOR_DIR_1, FORWARD);
+        steps_needed2 = steps_needed/motor_speed_modifier_low;
+        steps_needed3 = steps_needed*motor_speed_modifier_high;
+        driveMotor(MOTOR_PWM_2, chosen_frequency*motor_speed_modifier_high, MOTOR_DIR_2, FORWARD);
+        driveMotor(MOTOR_PWM_1, chosen_frequency/motor_speed_modifier_low, MOTOR_DIR_1, FORWARD);
     }
     else if (direction == RIGHT) {
-        steps_needed2 = steps_needed*motor_speed_modifier;
-        steps_needed3 = steps_needed/motor_speed_modifier;
-        driveMotor(MOTOR_PWM_1, chosen_frequency*motor_speed_modifier, MOTOR_DIR_1, FORWARD);
-        driveMotor(MOTOR_PWM_2, chosen_frequency/motor_speed_modifier, MOTOR_DIR_2, FORWARD);
+        steps_needed2 = steps_needed*motor_speed_modifier_high;
+        steps_needed3 = steps_needed/motor_speed_modifier_low;
+        driveMotor(MOTOR_PWM_1, chosen_frequency*motor_speed_modifier_high, MOTOR_DIR_1, FORWARD);
+        driveMotor(MOTOR_PWM_2, chosen_frequency/motor_speed_modifier_low, MOTOR_DIR_2, FORWARD);
     }
     
     
@@ -180,6 +219,9 @@ void __attribute__((interrupt, no_auto_psv)) _OC2Interrupt(void) {
     if (stripe_flag) {
         stripe_steps++;
     }
+    if (end_flag) {
+        end_steps++;
+    }
     
 }
 
@@ -208,8 +250,16 @@ void __attribute__((interrupt, no_auto_psv)) _CNInterrupt(void) {
 */
  
 void _ISR _ADC1Interrupt(void) {
-    stripes_detected = stripe_count;
     _AD1IF = 0;
+    if (ADC1BUF14 < 2048 && current_state == FOLLOW_LINE) {
+        end_flag = true;
+        end_steps = 0;
+        end_detection++;
+    } 
+    if (ADC1BUF15 > 1200) {
+        _AD1IE = 0;
+        current_state = SERVICE_EQUIPMENT;
+    }
     if (ADC1BUF4 < 2048) {
         if (high_to_low) {
             stripe_count++;
@@ -221,6 +271,45 @@ void _ISR _ADC1Interrupt(void) {
     else {
         high_to_low = true;
     }
+    
+}
+
+void shootGun(void) {
+    /*
+    double current_angle1 = 1500;
+    double current_ir = 0;
+    double max_ir = 0;
+    double max_ir_angle = 0;
+    CLKDIVbits.RCDIV = 1;
+    stopRobot();
+    if (OC1CON1bits.OCM == 0) { /* If PWM is off, turn it on 
+        OC1CON1bits.OCM = 0b110;Trying to turn PWM on while it is on repeatedly at a high frequency make it do weird things 
+    }
+    OC1RS = 39999; // Period
+    OC1R = 1500; // Duty cycle
+    while (current_angle1 < 5000) {
+        OC1R = current_angle1;
+        current_ir = 1;
+        if (current_ir > max_ir) {
+            max_ir = current_ir;
+            max_ir_angle = current_angle1;
+        }
+        current_angle1 = current_angle1 + 10;
+    }
+    while (1) {
+        OC1R = 5000;
+    }
+    */
+}
+
+void _ISR _T1Interrupt(void) {
+    _T1IF = 0;
+    timer_complete = true;
+    if (service_flag) {
+        OC1CON1bits.OCM = 0;/* Trying to turn PWM on while it is on repeatedly at a high frequency make it do weird things */
+        service_flag = false;
+    }
+    stopTimers();
 }
 
 
